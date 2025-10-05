@@ -352,19 +352,18 @@ class TestProviderDeleteAllController:
     """Pruebas unitarias para ProviderDeleteAllController"""
     
     @pytest.fixture
-    def delete_controller(self):
-        """Fixture para ProviderDeleteAllController"""
-        return ProviderDeleteAllController()
+    def mock_service(self):
+        """Fixture para mock del ProviderService"""
+        return MagicMock()
     
-    @patch('app.controllers.provider_controller.ProviderService')
-    def test_delete_all_success(self, mock_service_class, delete_controller):
+    @pytest.fixture
+    def delete_controller(self, mock_service):
+        """Fixture para ProviderDeleteAllController con servicio mockeado"""
+        return ProviderDeleteAllController(provider_service=mock_service)
+    
+    def test_delete_all_success(self, delete_controller, mock_service):
         """Prueba la eliminación exitosa de todos los proveedores"""
-        mock_service = MagicMock()
-        mock_service_class.return_value = mock_service
         mock_service.delete_all.return_value = 5
-
-        # Mock del servicio en la instancia del controlador
-        delete_controller.provider_service = mock_service
 
         result = delete_controller.delete()
 
@@ -373,30 +372,18 @@ class TestProviderDeleteAllController:
         assert result[0]["data"]["deleted_count"] == 5
         assert result[1] == 200
     
-    @patch('app.controllers.provider_controller.ProviderService')
-    def test_delete_all_service_error(self, mock_service_class, delete_controller):
+    def test_delete_all_service_error(self, delete_controller, mock_service):
         """Prueba la eliminación con error del servicio"""
-        mock_service = MagicMock()
-        mock_service_class.return_value = mock_service
         mock_service.delete_all.side_effect = Exception("Error de base de datos")
-
-        # Mock del servicio en la instancia del controlador
-        delete_controller.provider_service = mock_service
 
         result = delete_controller.delete()
 
         assert result[0]["error"] == "Error temporal del sistema. Contacte soporte técnico si persiste"
         assert result[1] == 500
     
-    @patch('app.controllers.provider_controller.ProviderService')
-    def test_delete_all_zero_providers(self, mock_service_class, delete_controller):
+    def test_delete_all_zero_providers(self, delete_controller, mock_service):
         """Prueba la eliminación cuando no hay proveedores"""
-        mock_service = MagicMock()
-        mock_service_class.return_value = mock_service
         mock_service.delete_all.return_value = 0
-
-        # Mock del servicio en la instancia del controlador
-        delete_controller.provider_service = mock_service
 
         result = delete_controller.delete()
 
