@@ -14,8 +14,8 @@ from ..exceptions.custom_exceptions import ValidationError, BusinessLogicError, 
 class ProviderController(BaseController):
     """Controlador para operaciones REST de proveedores"""
     
-    def __init__(self):
-        self.provider_service = ProviderService()
+    def __init__(self, provider_service=None):
+        self.provider_service = provider_service or ProviderService()
     
     def get(self, provider_id: str = None) -> Tuple[Dict[str, Any], int]:
         """GET /providers o GET /providers/{id}"""
@@ -190,8 +190,8 @@ class ProviderHealthController(BaseController):
 class ProviderDeleteAllController(BaseController):
     """Controlador para eliminar todos los proveedores"""
     
-    def __init__(self):
-        self.provider_service = ProviderService()
+    def __init__(self, provider_service=None):
+        self.provider_service = provider_service or ProviderService()
     
     def delete(self) -> Tuple[Dict[str, Any], int]:
         """DELETE /providers/all - Eliminar todos los proveedores"""

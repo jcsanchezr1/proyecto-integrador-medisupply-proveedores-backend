@@ -15,8 +15,8 @@ from ..exceptions.custom_exceptions import ValidationError, BusinessLogicError
 class ProviderService(BaseService):
     """Servicio para operaciones de negocio de proveedores"""
     
-    def __init__(self):
-        self.provider_repository = ProviderRepository()
+    def __init__(self, provider_repository=None):
+        self.provider_repository = provider_repository or ProviderRepository()
     
     def create(self, **kwargs) -> Provider:
         """Crea un nuevo proveedor con validaciones de negocio"""
@@ -141,7 +141,7 @@ class ProviderService(BaseService):
     
     def _is_allowed_file(self, filename: str) -> bool:
         """Verifica si el archivo está permitido"""
-        if '.' not in filename:
+        if not filename or '.' not in filename:
             return False
         
         extension = filename.lower().split('.')[-1]

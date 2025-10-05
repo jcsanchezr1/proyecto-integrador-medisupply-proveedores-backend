@@ -746,16 +746,29 @@ curl "http://localhost:8082/providers?per_page=15"
 ### Ejecutar Tests
 
 ```bash
-python -m unittest discover -s tests
+# Ejecutar todas las pruebas
+pytest
+
+# Ejecutar con información detallada
+pytest -v
+
+# Ejecutar pruebas específicas
+pytest tests/test_provider_model.py
 ```
 
 ### Ejecutar con Coverage
 
 ```bash
-coverage run -m unittest discover -s tests
-coverage report -m
-coverage html
+# Ejecutar pruebas con coverage
+pytest --cov=app --cov-report=term-missing
+
+# Generar reporte HTML de coverage
+pytest --cov=app --cov-report=html
+
+# Verificar 100% de coverage
+pytest --cov=app --cov-fail-under=100
 ```
+
 
 ### Colección de Postman
 
@@ -896,7 +909,3 @@ docker-compose up --build
 3. Implementar cambios con tests
 4. Ejecutar tests y verificar coverage
 5. Crear pull request con descripción detallada
-
-## Licencia
-
-Este proyecto es parte del sistema MediSupply y está sujeto a las políticas de la organización.
