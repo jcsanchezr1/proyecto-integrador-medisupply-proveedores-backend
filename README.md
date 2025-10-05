@@ -865,11 +865,6 @@ docker-compose up --build
 | created_at | TIMESTAMP | Fecha de creación |
 | updated_at | TIMESTAMP | Fecha de última actualización |
 
-### Índices
-
-- **PRIMARY KEY**: id
-- **UNIQUE**: email
-- **INDEX**: name (para ordenamiento eficiente)
 
 ## Seguridad
 
@@ -879,33 +874,3 @@ docker-compose up --build
 - Validación de tipos de archivo
 - Límites de tamaño de archivo
 - Validación de parámetros de paginación
-
-### Manejo de Errores
-
-- No exposición de información sensible en errores
-- Logging de errores para debugging
-- Respuestas de error consistentes
-
-## Performance
-
-### Optimizaciones Implementadas
-
-- Paginación eficiente con LIMIT y OFFSET
-- Ordenamiento en base de datos
-- Conteo optimizado de registros
-- Límites de elementos por página
-
-### Recomendaciones
-
-- Usar índices apropiados en la base de datos
-- Implementar cache para consultas frecuentes
-- Monitorear performance de queries
-- Considerar implementar búsqueda full-text
-
-## Contribución
-
-1. Fork el proyecto
-2. Crear una rama para la nueva funcionalidad
-3. Implementar cambios con tests
-4. Ejecutar tests y verificar coverage
-5. Crear pull request con descripción detallada
