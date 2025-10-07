@@ -7,16 +7,20 @@ import os
 import uuid
 
 from .base_service import BaseService
+from .cloud_storage_service import CloudStorageService
 from ..repositories.provider_repository import ProviderRepository
 from ..models.provider_model import Provider
 from ..exceptions.custom_exceptions import ValidationError, BusinessLogicError
+from ..config.settings import Config
 
 
 class ProviderService(BaseService):
     """Servicio para operaciones de negocio de proveedores"""
     
-    def __init__(self, provider_repository=None):
+    def __init__(self, provider_repository=None, cloud_storage_service=None, config=None):
         self.provider_repository = provider_repository or ProviderRepository()
+        self.config = config or Config()
+        self.cloud_storage_service = cloud_storage_service or CloudStorageService(self.config)
     
     def create(self, **kwargs) -> Provider:
         """Crea un nuevo proveedor con validaciones de negocio"""
@@ -26,10 +30,14 @@ class ProviderService(BaseService):
             
             # Procesar archivo de logo si se proporciona
             logo_file = kwargs.get('logo_file')
+            logo_filename = None
+            logo_url = None
+            
             if logo_file is not None:
-                logo_filename = self._process_logo_file(logo_file)
+                logo_filename, logo_url = self._process_logo_file(logo_file)
                 if logo_filename:
                     kwargs['logo_filename'] = logo_filename
+                    kwargs['logo_url'] = logo_url
             
             # Crear proveedor
             provider = self.provider_repository.create(**kwargs)
@@ -44,14 +52,23 @@ class ProviderService(BaseService):
     def get_by_id(self, provider_id: str) -> Optional[Provider]:
         """Obtiene un proveedor por ID"""
         try:
-            return self.provider_repository.get_by_id(provider_id)
+            provider = self.provider_repository.get_by_id(provider_id)
+            if provider and provider.logo_filename:
+                # Generar URL para el logo
+                provider.logo_url = self.cloud_storage_service.get_image_url(provider.logo_filename)
+            return provider
         except Exception as e:
             raise BusinessLogicError(f"Error al obtener proveedor: {str(e)}")
     
     def get_all(self, limit: Optional[int] = None, offset: int = 0) -> List[Provider]:
         """Obtiene todos los proveedores con paginación"""
         try:
-            return self.provider_repository.get_all(limit=limit, offset=offset)
+            providers = self.provider_repository.get_all(limit=limit, offset=offset)
+            # Generar URLs para todos los proveedores que tengan logo
+            for provider in providers:
+                if provider.logo_filename:
+                    provider.logo_url = self.cloud_storage_service.get_image_url(provider.logo_filename)
+            return providers
         except Exception as e:
             raise BusinessLogicError(f"Error al obtener proveedores: {str(e)}")
     
@@ -106,38 +123,41 @@ class ProviderService(BaseService):
         if errors:
             raise ValueError("; ".join(errors))
     
-    def _process_logo_file(self, logo_file: Optional[FileStorage]) -> Optional[str]:
-        """Procesa el archivo de logo y retorna el nombre del archivo"""
+    def _process_logo_file(self, logo_file: Optional[FileStorage]) -> tuple[Optional[str], Optional[str]]:
+        """
+        Procesa el archivo de logo y lo sube a Google Cloud Storage
+        
+        Args:
+            logo_file: Archivo de imagen del logo
+            
+        Returns:
+            tuple[Optional[str], Optional[str]]: (filename, url_pública)
+        """
         if not logo_file or not logo_file.filename:
-            return None
+            return None, None
         
-        # Validar que el archivo tenga nombre
-        if not logo_file.filename.strip():
-            raise ValidationError("El campo 'Logo' debe aceptar únicamente archivos de imagen (JPG, PNG, GIF) con un tamaño máximo de 2MB")
-        
-        # Validar tipo de archivo (JPG, PNG, GIF)
-        if not self._is_allowed_file(logo_file.filename):
-            raise ValidationError("El archivo debe ser una imagen válida (JPG, PNG, GIF)")
-        
-        # Validar tamaño del archivo (2MB máximo)
-        logo_file.seek(0, 2)  # Ir al final del archivo
-        file_size = logo_file.tell()
-        logo_file.seek(0)  # Volver al inicio
-        
-        if file_size == 0:
-            raise ValidationError("El archivo está vacío")
-        
-        if file_size > 2 * 1024 * 1024:  # 2MB
-            raise ValidationError("El archivo no puede exceder 2MB")
-        
-        # Generar nombre único para el archivo
-        provider_model = Provider()
-        unique_filename = provider_model.generate_logo_filename(logo_file.filename)
-        
-        # TODO: Aquí se implementaría la subida al storage y publicación al tópico
-        # Por ahora solo retornamos el nombre del archivo
-        
-        return unique_filename
+        try:
+            # Generar nombre único para el archivo
+            provider_model = Provider()
+            unique_filename = provider_model.generate_logo_filename(logo_file.filename)
+            
+            # Subir imagen a Google Cloud Storage
+            success, message, _ = self.cloud_storage_service.upload_image(
+                logo_file, unique_filename
+            )
+            
+            if not success:
+                raise ValidationError(f"Error al subir imagen: {message}")
+            
+            # Generar URL firmada
+            signed_url = self.cloud_storage_service.get_image_url(unique_filename)
+            
+            return unique_filename, signed_url
+            
+        except Exception as e:
+            if isinstance(e, ValidationError):
+                raise
+            raise ValidationError(f"Error al procesar archivo de logo: {str(e)}")
     
     def _is_allowed_file(self, filename: str) -> bool:
         """Verifica si el archivo está permitido"""
@@ -159,7 +179,9 @@ class ProviderService(BaseService):
                     'id': provider.id,
                     'name': provider.name,
                     'email': provider.email,
-                    'phone': provider.phone
+                    'phone': provider.phone,
+                    'logo_filename': provider.logo_filename,
+                    'logo_url': provider.logo_url
                 }
                 for provider in providers
             ]

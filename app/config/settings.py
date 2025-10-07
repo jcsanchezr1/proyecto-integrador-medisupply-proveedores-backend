@@ -33,6 +33,13 @@ class Config:
     UPLOAD_FOLDER = config('UPLOAD_FOLDER', default='uploads')
     ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif'}
     
+    # Configuración de Google Cloud Storage
+    GCP_PROJECT_ID = config('GCP_PROJECT_ID', default='soluciones-cloud-2024-02')
+    BUCKET_NAME = config('BUCKET_NAME', default='medisupply-images-bucket')
+    BUCKET_FOLDER = config('BUCKET_FOLDER', default='providers')
+    BUCKET_LOCATION = config('BUCKET_LOCATION', default='us-central1')
+    GOOGLE_APPLICATION_CREDENTIALS = config('GOOGLE_APPLICATION_CREDENTIALS', default='')
+    
     # Configuración de logging
     LOG_LEVEL = config('LOG_LEVEL', default='INFO')
 

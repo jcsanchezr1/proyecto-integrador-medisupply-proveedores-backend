@@ -3,7 +3,7 @@ Repositorio de Proveedores - Implementación con SQLAlchemy
 """
 from typing import List, Optional
 from sqlalchemy import create_engine, Column, String, DateTime, Text
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import datetime
@@ -26,6 +26,7 @@ class ProviderDB(Base):
     email = Column(String(255), nullable=False, unique=True)
     phone = Column(String(20), nullable=False)
     logo_filename = Column(String(255), nullable=True)
+    logo_url = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -57,6 +58,7 @@ class ProviderRepository(BaseRepository):
             email=db_provider.email,
             phone=db_provider.phone,
             logo_filename=db_provider.logo_filename,
+            logo_url=db_provider.logo_url,
             created_at=db_provider.created_at,
             updated_at=db_provider.updated_at
         )
@@ -69,6 +71,7 @@ class ProviderRepository(BaseRepository):
             email=provider.email,
             phone=provider.phone,
             logo_filename=provider.logo_filename,
+            logo_url=provider.logo_url,
             created_at=provider.created_at,
             updated_at=provider.updated_at
         )

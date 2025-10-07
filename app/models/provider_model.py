@@ -18,6 +18,7 @@ class Provider(BaseModel):
         self.email = kwargs.get('email', '')
         self.phone = kwargs.get('phone', '')
         self.logo_filename = kwargs.get('logo_filename', '')
+        self.logo_url = kwargs.get('logo_url', '')
         self.created_at = kwargs.get('created_at', datetime.utcnow())
         self.updated_at = kwargs.get('updated_at', datetime.utcnow())
     
@@ -29,6 +30,7 @@ class Provider(BaseModel):
             'email': self.email,
             'phone': self.phone,
             'logo_filename': self.logo_filename,
+            'logo_url': self.logo_url,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

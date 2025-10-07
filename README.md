@@ -12,7 +12,8 @@ Este servicio proporciona una API REST para la gestión de proveedores del siste
 - Arquitectura en capas (Controller, Service, Repository, Model)
 - Validaciones de datos robustas
 - Paginación eficiente con ordenamiento
-- Soporte para archivos de imagen (logos)
+- Soporte para archivos de imagen (logos) con Google Cloud Storage
+- URLs firmadas con expiración de 3 meses
 - Manejo de excepciones personalizado
 - Base de datos PostgreSQL con SQLAlchemy
 - Contenedorización con Docker
@@ -100,6 +101,36 @@ El proyecto sigue una arquitectura en capas bien definida:
 | Solo per_page | `GET /providers?per_page=25` | Página 1, 25 elementos |
 | Ambos parámetros | `GET /providers?page=3&per_page=15` | Página 3, 15 elementos |
 
+## Almacenamiento de Imágenes
+
+### Google Cloud Storage
+El servicio utiliza Google Cloud Storage para almacenar los logos de los proveedores:
+
+- **Bucket**: `medisupply-images-bucket`
+- **Carpeta**: `providers/`
+- **Acceso**: Privado con URLs firmadas
+- **Expiración**: 3 meses (2160 horas)
+
+### Campos de Imagen
+Cada proveedor puede tener asociado un logo con los siguientes campos:
+
+- **`logo_filename`**: Nombre único del archivo (ej: `logo_uuid.png`)
+- **`logo_url`**: URL firmada para acceder a la imagen (generada dinámicamente)
+
+### Generación de URLs
+- Las URLs se generan automáticamente al crear un proveedor
+- Las URLs se regeneran en cada consulta para mantenerlas válidas
+- Formato: `https://storage.googleapis.com/medisupply-images-bucket/providers/logo_uuid.png?Expires=...&GoogleAccessId=...&Signature=...`
+
+### Configuración
+Las credenciales se configuran mediante variables de entorno:
+```bash
+GCP_PROJECT_ID=soluciones-cloud-2024-02
+BUCKET_NAME=medisupply-images-bucket
+BUCKET_FOLDER=providers
+GOOGLE_APPLICATION_CREDENTIALS=/app/credentials/gcp-credentials.json
+```
+
 ## Endpoints Disponibles
 
 ### Health Check
@@ -159,7 +190,9 @@ GET /providers?page=1&per_page=3
         "id": "uuid-generado",
         "name": "Farmacia San José",
         "email": "ventas@farmacia.com",
-        "phone": "3001234567"
+        "phone": "3001234567",
+        "logo_filename": "logo_uuid.png",
+        "logo_url": "https://storage.googleapis.com/medisupply-images-bucket/providers/logo_uuid.png?Expires=..."
       }
     ],
     "pagination": {
@@ -191,7 +224,8 @@ Obtiene un proveedor específico por su ID.
     "name": "Farmacia San José",
     "email": "ventas@farmacia.com",
     "phone": "3001234567",
-    "logo_filename": "logo_uuid.jpg",
+    "logo_filename": "logo_uuid.png",
+    "logo_url": "https://storage.googleapis.com/medisupply-images-bucket/providers/logo_uuid.png?Expires=...",
     "created_at": "2025-10-05T19:10:36.311869",
     "updated_at": "2025-10-05T19:10:36.311870"
   }
@@ -243,7 +277,8 @@ Crea un nuevo proveedor. Soporta tanto JSON como multipart/form-data.
     "name": "Farmacia San José",
     "email": "ventas@farmacia.com",
     "phone": "3001234567",
-    "logo_filename": "logo_uuid.jpg",
+    "logo_filename": "logo_uuid.png",
+    "logo_url": "https://storage.googleapis.com/medisupply-images-bucket/providers/logo_uuid.png?Expires=...",
     "created_at": "2025-10-05T19:10:36.311869",
     "updated_at": "2025-10-05T19:10:36.311870"
   }

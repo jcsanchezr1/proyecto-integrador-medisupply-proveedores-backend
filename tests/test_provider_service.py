@@ -98,7 +98,7 @@ class TestProviderService:
         mock_repository.get_by_email.return_value = None
         mock_repository.create.return_value = Provider(**provider_data)
         
-        with patch.object(provider_service, '_process_logo_file', return_value="processed_logo.jpg") as mock_process:
+        with patch.object(provider_service, '_process_logo_file', return_value=("processed_logo.jpg", "https://storage.googleapis.com/test-bucket/processed_logo.jpg")) as mock_process:
             result = provider_service.create(**provider_data)
             
             mock_process.assert_called_once_with(sample_file_storage)
@@ -160,7 +160,9 @@ class TestProviderService:
             'id': sample_provider.id,
             'name': sample_provider.name,
             'email': sample_provider.email,
-            'phone': sample_provider.phone
+            'phone': sample_provider.phone,
+            'logo_filename': sample_provider.logo_filename,
+            'logo_url': sample_provider.logo_url
         }]
         assert result == expected
     
@@ -211,39 +213,42 @@ class TestProviderService:
     def test_process_logo_file_success(self, provider_service, sample_file_storage):
         """Prueba el procesamiento exitoso de archivo de logo"""
         with patch.object(provider_service, '_is_allowed_file', return_value=True):
-            result = provider_service._process_logo_file(sample_file_storage)
+            filename, url = provider_service._process_logo_file(sample_file_storage)
             
-            assert result.startswith('logo_')
-            assert result.endswith('.jpg')
-            assert len(result) > 10  # Debe tener UUID
+            assert filename.startswith('logo_')
+            assert filename.endswith('.jpg')
+            assert len(filename) > 10
+            assert url.startswith('https://storage.googleapis.com/')
     
     def test_process_logo_file_empty_filename(self, provider_service):
         """Prueba el procesamiento con nombre de archivo vacío"""
         file_storage = MagicMock()
         file_storage.filename = ""
         
-        result = provider_service._process_logo_file(file_storage)
+        filename, url = provider_service._process_logo_file(file_storage)
         
-        assert result is None
+        assert filename is None
+        assert url is None
     
     def test_process_logo_file_none(self, provider_service):
         """Prueba el procesamiento con archivo None"""
-        result = provider_service._process_logo_file(None)
+        filename, url = provider_service._process_logo_file(None)
         
-        assert result is None
+        assert filename is None
+        assert url is None
     
     def test_process_logo_file_invalid_type(self, provider_service, sample_file_storage):
         """Prueba el procesamiento con tipo de archivo inválido"""
         sample_file_storage.filename = "test.txt"
         
-        with pytest.raises(ValidationError, match="El archivo debe ser una imagen válida"):
+        with pytest.raises(ValidationError, match="Extensión no permitida"):
             provider_service._process_logo_file(sample_file_storage)
     
     def test_process_logo_file_too_large(self, provider_service, sample_file_storage):
         """Prueba el procesamiento con archivo muy grande"""
         sample_file_storage.tell.return_value = 3 * 1024 * 1024  # 3MB
         
-        with pytest.raises(ValidationError, match="El archivo no puede exceder 2MB"):
+        with pytest.raises(ValidationError, match="El archivo es demasiado grande"):
             provider_service._process_logo_file(sample_file_storage)
     
     def test_process_logo_file_empty_file(self, provider_service, sample_file_storage):
