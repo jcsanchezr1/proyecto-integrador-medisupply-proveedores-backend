@@ -27,7 +27,7 @@ class TestCloudStorageSimpleCoverage:
         return config
 
     def test_generate_unique_filename_no_extension(self, mock_config):
-        """Prueba generación de nombre único sin extensión - líneas 108-110"""
+        """Prueba generación de nombre único sin extensión"""
         with patch('app.services.cloud_storage_service.Config', return_value=mock_config):
             service = CloudStorageService()
             filename = service.generate_unique_filename("test", "logo")
@@ -37,7 +37,7 @@ class TestCloudStorageSimpleCoverage:
             assert len(filename) > 10
 
     def test_generate_unique_filename_empty(self, mock_config):
-        """Prueba generación de nombre único con archivo vacío - líneas 108-110"""
+        """Prueba generación de nombre único con archivo vacío"""
         with patch('app.services.cloud_storage_service.Config', return_value=mock_config):
             service = CloudStorageService()
             filename = service.generate_unique_filename("", "logo")

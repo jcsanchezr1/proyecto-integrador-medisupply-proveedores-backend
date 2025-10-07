@@ -1,5 +1,5 @@
 """
-Pruebas específicas para cubrir las líneas faltantes en cloud_storage_service.py
+Pruebas para el servicio de almacenamiento en la nube
 """
 import pytest
 from unittest.mock import MagicMock, patch, Mock
@@ -8,8 +8,8 @@ from app.services.cloud_storage_service import CloudStorageService
 from app.config.settings import Config
 
 
-class TestCloudStorageCoverageMissing:
-    """Pruebas para cubrir líneas específicas faltantes"""
+class TestCloudStorageService:
+    """Pruebas para el servicio de almacenamiento en la nube"""
 
     @pytest.fixture
     def mock_config(self):
@@ -43,7 +43,7 @@ class TestCloudStorageCoverageMissing:
             return service, mock_blob
 
     def test_generate_unique_filename_no_extension(self, cloud_service):
-        """Prueba generate_unique_filename sin extensión (líneas 108-110)"""
+        """Prueba generate_unique_filename sin extensión"""
         service, _ = cloud_service
         
         # Caso: filename sin extensión
@@ -54,7 +54,7 @@ class TestCloudStorageCoverageMissing:
         assert len(result) > 10  # Debe tener UUID
 
     def test_generate_unique_filename_empty_filename(self, cloud_service):
-        """Prueba generate_unique_filename con filename vacío (líneas 108-110)"""
+        """Prueba generate_unique_filename con filename vacío"""
         service, _ = cloud_service
         
         # Caso: filename vacío
@@ -65,7 +65,7 @@ class TestCloudStorageCoverageMissing:
         assert len(result) > 10  # Debe tener UUID
 
     def test_generate_unique_filename_none_filename(self, cloud_service):
-        """Prueba generate_unique_filename con filename None (líneas 108-110)"""
+        """Prueba generate_unique_filename con filename None """
         service, _ = cloud_service
         
         # Caso: filename None
@@ -76,7 +76,7 @@ class TestCloudStorageCoverageMissing:
         assert len(result) > 10  # Debe tener UUID
 
     def test_delete_image_blob_not_exists(self, cloud_service):
-        """Prueba delete_image cuando el blob no existe (líneas 167-176)"""
+        """Prueba delete_image cuando el blob no existe"""
         service, mock_blob = cloud_service
         
         # Configurar mock para que blob no existe
@@ -89,7 +89,7 @@ class TestCloudStorageCoverageMissing:
         mock_blob.exists.assert_called_once()
 
     def test_get_image_url_blob_not_exists(self, cloud_service):
-        """Prueba get_image_url cuando el blob no existe (línea 202)"""
+        """Prueba get_image_url cuando el blob no existe"""
         service, mock_blob = cloud_service
         
         # Configurar mock para que blob no existe
@@ -101,7 +101,7 @@ class TestCloudStorageCoverageMissing:
         mock_blob.exists.assert_called_once()
 
     def test_image_exists_exception(self, cloud_service):
-        """Prueba image_exists cuando hay excepción (líneas 228-231)"""
+        """Prueba image_exists cuando hay excepción"""
         service, mock_blob = cloud_service
         
         # Configurar mock para que lance excepción
@@ -113,7 +113,7 @@ class TestCloudStorageCoverageMissing:
         mock_blob.exists.assert_called_once()
 
     def test_image_exists_success(self, cloud_service):
-        """Prueba image_exists cuando existe (línea 231)"""
+        """Prueba image_exists cuando existe"""
         service, mock_blob = cloud_service
         
         # Configurar mock para que blob existe
@@ -160,7 +160,7 @@ class TestCloudStorageCoverageMissing:
         assert "Error de Google Cloud Storage" in message
 
     def test_get_image_url_exception_fallback(self, cloud_service):
-        """Prueba get_image_url con excepción y fallback (líneas 213-216)"""
+        """Prueba get_image_url con excepción y fallback"""
         service, mock_blob = cloud_service
         
         # Configurar mock para que lance excepción
@@ -173,7 +173,7 @@ class TestCloudStorageCoverageMissing:
         assert result == expected_url
 
     def test_delete_image_general_exception(self, cloud_service):
-        """Prueba delete_image con excepción general (líneas 175-176)"""
+        """Prueba delete_image con excepción general"""
         service, mock_blob = cloud_service
         
         # Configurar mock para que lance excepción general (no GoogleCloudError)
@@ -186,7 +186,7 @@ class TestCloudStorageCoverageMissing:
         assert "Error de Google Cloud Storage" in message
 
     def test_delete_image_success(self, cloud_service):
-        """Prueba delete_image exitoso (línea 176)"""
+        """Prueba delete_image exitoso"""
         service, mock_blob = cloud_service
         
         # Configurar mock para éxito
@@ -200,7 +200,7 @@ class TestCloudStorageCoverageMissing:
         mock_blob.delete.assert_called_once()
 
     def test_generate_unique_filename_no_dot(self, cloud_service):
-        """Prueba generate_unique_filename con filename sin punto (líneas 108-110)"""
+        """Prueba generate_unique_filename con filename sin punto"""
         service, _ = cloud_service
         
         # Caso: filename sin punto (no hay extensión)
@@ -209,3 +209,15 @@ class TestCloudStorageCoverageMissing:
         assert result.startswith("image_")
         assert result.endswith(".jpg")
         assert len(result) > 10  # Debe tener UUID
+
+    def test_generate_unique_filename_with_extension(self, cloud_service):
+        """Prueba generate_unique_filename con extensión válida"""
+        service, _ = cloud_service
+        
+        # Caso: filename con extensión válida
+        result = service.generate_unique_filename("test_image.png")
+        
+        assert result.startswith("image_")
+        assert result.endswith(".png")
+        assert len(result) > 10  # Debe tener UUID
+        assert "test_image" not in result  # No debe contener el nombre original
