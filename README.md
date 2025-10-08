@@ -908,4 +908,4 @@ docker-compose up --build
 - Sanitización de datos de entrada
 - Validación de tipos de archivo
 - Límites de tamaño de archivo
-- Validación de parámetros de paginación
+- Validación de parámetros de paginación.
