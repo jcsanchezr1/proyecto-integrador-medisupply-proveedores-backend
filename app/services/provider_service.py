@@ -136,6 +136,13 @@ class ProviderService(BaseService):
         if not logo_file or not logo_file.filename:
             return None, None
         
+        # Validar que el archivo no esté vacío
+        logo_file.seek(0, 2)
+        file_size = logo_file.tell()
+        logo_file.seek(0)
+        if file_size == 0:
+            raise ValidationError("El archivo está vacío")
+        
         try:
             # Generar nombre único para el archivo
             provider_model = Provider()

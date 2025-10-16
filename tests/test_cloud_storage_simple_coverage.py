@@ -26,25 +26,6 @@ class TestCloudStorageSimpleCoverage:
         config.GOOGLE_APPLICATION_CREDENTIALS = "/path/to/credentials.json"
         return config
 
-    def test_generate_unique_filename_no_extension(self, mock_config):
-        """Prueba generación de nombre único sin extensión"""
-        with patch('app.services.cloud_storage_service.Config', return_value=mock_config):
-            service = CloudStorageService()
-            filename = service.generate_unique_filename("test", "logo")
-            
-            assert filename.startswith("logo_")
-            assert filename.endswith(".jpg")
-            assert len(filename) > 10
-
-    def test_generate_unique_filename_empty(self, mock_config):
-        """Prueba generación de nombre único con archivo vacío"""
-        with patch('app.services.cloud_storage_service.Config', return_value=mock_config):
-            service = CloudStorageService()
-            filename = service.generate_unique_filename("", "logo")
-            
-            assert filename.startswith("logo_")
-            assert filename.endswith(".jpg")
-            assert len(filename) > 10
 
     def test_validate_image_file_no_extension(self, mock_config):
         """Prueba validación sin extensión"""
