@@ -39,6 +39,7 @@ class Config:
     BUCKET_FOLDER = config('BUCKET_FOLDER', default='providers')
     BUCKET_LOCATION = config('BUCKET_LOCATION', default='us-central1')
     GOOGLE_APPLICATION_CREDENTIALS = config('GOOGLE_APPLICATION_CREDENTIALS', default='')
+    SIGNING_SERVICE_ACCOUNT_EMAIL = config('SIGNING_SERVICE_ACCOUNT_EMAIL', default='')
     
     # Configuración de logging
     LOG_LEVEL = config('LOG_LEVEL', default='INFO')
