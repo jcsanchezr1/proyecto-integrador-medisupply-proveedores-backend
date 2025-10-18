@@ -3048,7 +3048,7 @@
 	"variable": [
 		{
 			"key": "url_local_proveedor",
-			"value": "http://localhost:8083",
+			"value": "http://localhost:8082",
 			"type": "string"
 		}
 	]
