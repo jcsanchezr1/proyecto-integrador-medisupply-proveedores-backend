@@ -169,6 +169,72 @@
     },
     {
       "name": "Listar Proveedores - Página 1 (5 por página)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea exitosa",
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta",
+              "pm.test('Response has correct structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "    pm.expect(jsonData).to.have.property('data');",
+              "    pm.expect(jsonData.data).to.have.property('providers');",
+              "    pm.expect(jsonData.data).to.have.property('pagination');",
+              "});",
+              "",
+              "// Validar estructura de paginación",
+              "pm.test('Pagination structure is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    const pagination = jsonData.data.pagination;",
+              "    pm.expect(pagination).to.have.property('page');",
+              "    pm.expect(pagination).to.have.property('per_page');",
+              "    pm.expect(pagination).to.have.property('total');",
+              "    pm.expect(pagination).to.have.property('total_pages');",
+              "    pm.expect(pagination).to.have.property('has_next');",
+              "    pm.expect(pagination).to.have.property('has_prev');",
+              "});",
+              "",
+              "// Validar que la página sea 1",
+              "pm.test('Page is 1', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.pagination.page).to.eql(1);",
+              "});",
+              "",
+              "// Validar que per_page sea 5",
+              "pm.test('Per page is 5', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.pagination.per_page).to.eql(5);",
+              "});",
+              "",
+              "// Validar que providers sea un array",
+              "pm.test('Providers is an array', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.providers).to.be.an('array');",
+              "});",
+              "",
+              "// Validar que el array de providers no exceda per_page",
+              "pm.test('Providers count does not exceed per_page', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.providers.length).to.be.at.most(jsonData.data.pagination.per_page);",
+              "});",
+              "",
+              "console.log('Validaciones completadas para listar proveedores página 1 (5 por página)');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "header": [],
@@ -750,6 +816,64 @@
             ],
             "type": "text/javascript"
           }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea exitosa",
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta",
+              "pm.test('Response has correct structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "    pm.expect(jsonData).to.have.property('data');",
+              "    pm.expect(jsonData.data).to.have.property('id');",
+              "    pm.expect(jsonData.data).to.have.property('name');",
+              "    pm.expect(jsonData.data).to.have.property('email');",
+              "    pm.expect(jsonData.data).to.have.property('phone');",
+              "});",
+              "",
+              "// Validar que el mensaje sea correcto",
+              "pm.test('Success message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.eql('Proveedor registrado exitosamente');",
+              "});",
+              "",
+              "// Validar que el ID sea un UUID válido",
+              "pm.test('ID is valid UUID', function () {",
+              "    const jsonData = pm.response.json();",
+              "    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;",
+              "    pm.expect(jsonData.data.id).to.match(uuidRegex);",
+              "});",
+              "",
+              "// Validar que los datos coincidan con los enviados",
+              "pm.test('Data matches request', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.name).to.eql(pm.environment.get('nombre_multipart'));",
+              "    pm.expect(jsonData.data.email).to.eql(pm.environment.get('email_multipart'));",
+              "    pm.expect(jsonData.data.phone).to.eql(pm.environment.get('telefono_multipart'));",
+              "});",
+              "",
+              "// Validar timestamps",
+              "pm.test('Timestamps are present', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('created_at');",
+              "    pm.expect(jsonData.data).to.have.property('updated_at');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para creación exitosa con datos aleatorios (Multipart)');"
+            ],
+            "type": "text/javascript"
+          }
         }
       ],
       "request": {
@@ -858,6 +982,64 @@
               "console.log('Nombre:', nombreAleatorio);",
               "console.log('Email:', emailAleatorio);",
               "console.log('Teléfono:', telefonoAleatorio);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea exitosa",
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta",
+              "pm.test('Response has correct structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "    pm.expect(jsonData).to.have.property('data');",
+              "    pm.expect(jsonData.data).to.have.property('id');",
+              "    pm.expect(jsonData.data).to.have.property('name');",
+              "    pm.expect(jsonData.data).to.have.property('email');",
+              "    pm.expect(jsonData.data).to.have.property('phone');",
+              "});",
+              "",
+              "// Validar que el mensaje sea correcto",
+              "pm.test('Success message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.eql('Proveedor registrado exitosamente');",
+              "});",
+              "",
+              "// Validar que el ID sea un UUID válido",
+              "pm.test('ID is valid UUID', function () {",
+              "    const jsonData = pm.response.json();",
+              "    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;",
+              "    pm.expect(jsonData.data.id).to.match(uuidRegex);",
+              "});",
+              "",
+              "// Validar que los datos coincidan con los enviados",
+              "pm.test('Data matches request', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data.name).to.eql(pm.environment.get('nombre_logo'));",
+              "    pm.expect(jsonData.data.email).to.eql(pm.environment.get('email_logo'));",
+              "    pm.expect(jsonData.data.phone).to.eql(pm.environment.get('telefono_logo'));",
+              "});",
+              "",
+              "// Validar timestamps",
+              "pm.test('Timestamps are present', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.data).to.have.property('created_at');",
+              "    pm.expect(jsonData.data).to.have.property('updated_at');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para creación exitosa con logo válido');"
             ],
             "type": "text/javascript"
           }
@@ -1032,6 +1214,38 @@
             ],
             "type": "text/javascript"
           }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea de error",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta de error",
+              "pm.test('Response has error structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('error');",
+              "});",
+              "",
+              "// Validar mensaje de error específico",
+              "pm.test('Error message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('Nombre');",
+              "    pm.expect(jsonData.error).to.include('caracteres');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de nombre con caracteres especiales');"
+            ],
+            "type": "text/javascript"
+          }
         }
       ],
       "request": {
@@ -1089,6 +1303,40 @@
     },
     {
       "name": "Validaciones - Email Vacío",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea de error",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta de error",
+              "pm.test('Response has error structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('error');",
+              "});",
+              "",
+              "// Validar mensaje de error específico",
+              "pm.test('Error message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('email');",
+              "    pm.expect(jsonData.error).to.include('obligatorio');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de email vacío');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
@@ -1320,6 +1568,40 @@
     },
     {
       "name": "Validaciones - Email Sin Extensión",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea de error",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta de error",
+              "pm.test('Response has error structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('error');",
+              "});",
+              "",
+              "// Validar mensaje de error específico",
+              "pm.test('Error message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('email');",
+              "    pm.expect(jsonData.error).to.include('formato');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de email sin extensión');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
@@ -1375,6 +1657,40 @@
     },
     {
       "name": "Validaciones - Teléfono Vacío",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea de error",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta de error",
+              "pm.test('Response has error structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('error');",
+              "});",
+              "",
+              "// Validar mensaje de error específico",
+              "pm.test('Error message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('phone');",
+              "    pm.expect(jsonData.error).to.include('obligatorio');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de teléfono vacío');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
@@ -1659,6 +1975,47 @@
             ],
             "type": "text/javascript"
           }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea de error",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta de error",
+              "pm.test('Response has error structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('error');",
+              "});",
+              "",
+              "// Validar que el error contenga información sobre los campos inválidos",
+              "pm.test('Error contains validation info', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.be.a('string');",
+              "    pm.expect(jsonData.error.length).to.be.greaterThan(0);",
+              "});",
+              "",
+              "// Validar que el error sea específico de validación",
+              "pm.test('Error is validation-specific', function () {",
+              "    const jsonData = pm.response.json();",
+              "    const errorText = jsonData.error.toLowerCase();",
+              "    pm.expect(errorText).to.satisfy(function(text) {",
+              "        return text.includes('obligatorio') || text.includes('formato') || text.includes('válido') || text.includes('caracteres');",
+              "    });",
+              "});",
+              "",
+              "console.log('Validaciones completadas para múltiples errores');"
+            ],
+            "type": "text/javascript"
+          }
         }
       ],
       "request": {
@@ -1802,6 +2159,47 @@
     },
     {
       "name": "Validaciones - JSON Malformado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea de error",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta de error",
+              "pm.test('Response has error structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('error');",
+              "});",
+              "",
+              "// Validar mensaje de error específico",
+              "pm.test('Error message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('JSON');",
+              "    pm.expect(jsonData.error).to.include('procesar');",
+              "});",
+              "",
+              "// Validar que el error contenga información sobre el JSON malformado",
+              "pm.test('Error contains JSON parsing info', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.be.a('string');",
+              "    pm.expect(jsonData.error.length).to.be.greaterThan(0);",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de JSON malformado');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
