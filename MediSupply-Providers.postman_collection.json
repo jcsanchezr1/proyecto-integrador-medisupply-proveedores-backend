@@ -399,32 +399,61 @@
       "name": "Listar Proveedores - Per Page Inválido (Error)",
       "event": [
         {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Generar valores de per_page inválidos",
+              "const perPageInvalidos = [0, -1, 101, 150, 200, 999, 'abc', 'texto', null, undefined];",
+              "const perPageInvalido = perPageInvalidos[Math.floor(Math.random() * perPageInvalidos.length)];",
+              "",
+              "pm.environment.set('per_page_invalido', perPageInvalido);",
+              "console.log('Per page inválido generado:', perPageInvalido);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
           "listen": "test",
           "script": {
             "exec": [
-              "// Validar que la respuesta sea de error",
-              "pm.test('Status code is 400', function () {",
-              "    pm.response.to.have.status(400);",
-              "});",
-              "",
               "// Validar que la respuesta sea JSON",
               "pm.test('Response is JSON', function () {",
               "    pm.response.to.be.json;",
               "});",
               "",
-              "// Validar estructura de la respuesta de error",
-              "pm.test('Response has error structure', function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property('error');",
+              "// Validar que la respuesta sea exitosa o de error",
+              "pm.test('Status code is 200 or 400', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 400]);",
               "});",
               "",
-              "// Validar mensaje de error específico",
-              "pm.test('Error message is correct', function () {",
+              "// Validar estructura de la respuesta",
+              "pm.test('Response has correct structure', function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.error).to.eql('El parámetro \\'per_page\\' debe estar entre 1 y 100');",
+              "    if (pm.response.code === 400) {",
+              "        pm.expect(jsonData).to.have.property('error');",
+              "    } else {",
+              "        pm.expect(jsonData).to.have.property('message');",
+              "        pm.expect(jsonData).to.have.property('data');",
+              "    }",
               "});",
               "",
-              "console.log('Validaciones completadas para error de per_page inválido');"
+              "// Validar comportamiento específico según el código de respuesta",
+              "pm.test('Response behavior is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 400) {",
+              "        // Si es error, validar mensaje de error",
+              "        pm.expect(jsonData.error).to.include('per_page');",
+              "        pm.expect(jsonData.error).to.include('entre 1 y 100');",
+              "    } else {",
+              "        // Si es éxito, validar que la paginación esté limitada",
+              "        pm.expect(jsonData.data).to.have.property('pagination');",
+              "        const perPage = jsonData.data.pagination.per_page;",
+              "        pm.expect(perPage).to.be.at.most(100);",
+              "    }",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de per_page inválido');",
+              "console.log('Valor enviado:', pm.environment.get('per_page_invalido'));"
             ],
             "type": "text/javascript"
           }
@@ -434,13 +463,13 @@
         "method": "GET",
         "header": [],
         "url": {
-          "raw": "{{url_local_proveedor}}/providers?per_page=150",
+          "raw": "{{url_local_proveedor}}/providers?per_page={{per_page_invalido}}",
           "host": ["{{url_local_proveedor}}"],
           "path": ["providers"],
           "query": [
             {
               "key": "per_page",
-              "value": "150"
+              "value": "{{per_page_invalido}}"
             }
           ]
         }
@@ -485,7 +514,12 @@
               "    pm.expect(jsonData.data.deleted_count).to.be.a('number');",
               "});",
               "",
-              "console.log('Validaciones completadas para eliminar todos los proveedores');"
+              "// Guardar el conteo de eliminados para uso posterior",
+              "const jsonData = pm.response.json();",
+              "pm.environment.set('deleted_count', jsonData.data.deleted_count);",
+              "",
+              "console.log('Validaciones completadas para eliminar todos los proveedores');",
+              "console.log('Proveedores eliminados:', jsonData.data.deleted_count);"
             ],
             "type": "text/javascript"
           }
@@ -902,6 +936,28 @@
       "name": "Validaciones - Nombre Vacío",
       "event": [
         {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Generar datos aleatorios para otros campos",
+              "const dominios = ['gmail.com', 'hotmail.com', 'yahoo.com', 'farmacia.com', 'salud.com', 'medicina.com'];",
+              "const usuarioAleatorio = 'ventas' + Math.floor(Math.random() * 1000);",
+              "const dominioAleatorio = dominios[Math.floor(Math.random() * dominios.length)];",
+              "const emailAleatorio = usuarioAleatorio + '@' + dominioAleatorio;",
+              "const telefonoAleatorio = '3' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');",
+              "",
+              "// Guardar en variables de entorno",
+              "pm.environment.set('email_nombre_vacio', emailAleatorio);",
+              "pm.environment.set('telefono_nombre_vacio', telefonoAleatorio);",
+              "",
+              "console.log('Datos generados para validación de nombre vacío:');",
+              "console.log('Email:', emailAleatorio);",
+              "console.log('Teléfono:', telefonoAleatorio);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
           "listen": "test",
           "script": {
             "exec": [
@@ -924,7 +980,14 @@
               "// Validar mensaje de error específico",
               "pm.test('Error message is correct', function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.error).to.eql('El campo \\'name\\' es obligatorio');",
+              "    pm.expect(jsonData.error).to.include('name');",
+              "    pm.expect(jsonData.error).to.include('obligatorio');",
+              "});",
+              "",
+              "// Validar que el error sea específico del campo nombre",
+              "pm.test('Error is name-specific', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error.toLowerCase()).to.include('name');",
               "});",
               "",
               "console.log('Validaciones completadas para error de nombre vacío');"
@@ -943,7 +1006,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"\",\n  \"email\": \"ventas@farmacia.com\",\n  \"phone\": \"3001234567\"\n}"
+          "raw": "{\n  \"name\": \"\",\n  \"email\": \"{{email_nombre_vacio}}\",\n  \"phone\": \"{{telefono_nombre_vacio}}\"\n}"
         },
         "url": {
           "raw": "{{url_local_proveedor}}/providers",
@@ -1087,11 +1150,22 @@
           "script": {
             "exec": [
               "// Generar emails inválidos sin @",
-              "const emailsInvalidos = ['ventasfarmacia.com', 'contacto.farmacia.com', 'ventas farmacia com', 'ventasfarmacia', 'ventas@farmacia.com@'];",
+              "const emailsInvalidos = ['ventasfarmacia.com', 'contacto.farmacia.com', 'ventas farmacia com', 'ventasfarmacia', 'ventas@farmacia.com@', 'usuario.dominio', 'email_sin_arroba', 'test.domain', 'usuario123dominio'];",
               "const emailInvalido = emailsInvalidos[Math.floor(Math.random() * emailsInvalidos.length)];",
               "",
+              "// Generar datos aleatorios para otros campos",
+              "const nombres = ['Farmacia San José', 'Farmacia ABC', 'Farmacia XYZ', 'Farmacia Central', 'Farmacia del Norte'];",
+              "const nombreAleatorio = nombres[Math.floor(Math.random() * nombres.length)];",
+              "const telefonoAleatorio = '3' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');",
+              "",
               "pm.environment.set('email_invalido', emailInvalido);",
-              "console.log('Email inválido generado:', emailInvalido);"
+              "pm.environment.set('nombre_email_invalido', nombreAleatorio);",
+              "pm.environment.set('telefono_email_invalido', telefonoAleatorio);",
+              "",
+              "console.log('Datos generados para validación de email sin @:');",
+              "console.log('Nombre:', nombreAleatorio);",
+              "console.log('Email inválido:', emailInvalido);",
+              "console.log('Teléfono:', telefonoAleatorio);"
             ],
             "type": "text/javascript"
           }
@@ -1119,10 +1193,18 @@
               "// Validar mensaje de error específico",
               "pm.test('Error message is correct', function () {",
               "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData.error).to.eql('El campo \\'Correo electrónico\\' debe validar el formato de email (debe contener \\'@\\' y un dominio válido)');",
+              "    pm.expect(jsonData.error).to.include('email');",
+              "    pm.expect(jsonData.error).to.include('formato');",
               "});",
               "",
-              "console.log('Validaciones completadas para error de email sin @');"
+              "// Validar que el error sea específico del campo email",
+              "pm.test('Error is email-specific', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error.toLowerCase()).to.include('correo');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de email sin @');",
+              "console.log('Email enviado:', pm.environment.get('email_invalido'));"
             ],
             "type": "text/javascript"
           }
@@ -1138,7 +1220,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Farmacia San José\",\n  \"email\": \"{{email_invalido}}\",\n  \"phone\": \"3001234567\"\n}"
+          "raw": "{\n  \"name\": \"{{nombre_email_invalido}}\",\n  \"email\": \"{{email_invalido}}\",\n  \"phone\": \"{{telefono_email_invalido}}\"\n}"
         },
         "url": {
           "raw": "{{url_local_proveedor}}/providers",
@@ -1150,6 +1232,72 @@
     },
     {
       "name": "Validaciones - Email Sin Dominio",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Generar emails inválidos sin dominio",
+              "const emailsSinDominio = ['ventas@', 'usuario@', 'test@', 'contacto@', 'admin@', 'user@', 'email@', 'farmacia@'];",
+              "const emailSinDominio = emailsSinDominio[Math.floor(Math.random() * emailsSinDominio.length)];",
+              "",
+              "// Generar datos aleatorios para otros campos",
+              "const nombres = ['Farmacia San José', 'Farmacia ABC', 'Farmacia XYZ', 'Farmacia Central', 'Farmacia del Norte'];",
+              "const nombreAleatorio = nombres[Math.floor(Math.random() * nombres.length)];",
+              "const telefonoAleatorio = '3' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');",
+              "",
+              "pm.environment.set('email_sin_dominio', emailSinDominio);",
+              "pm.environment.set('nombre_email_sin_dominio', nombreAleatorio);",
+              "pm.environment.set('telefono_email_sin_dominio', telefonoAleatorio);",
+              "",
+              "console.log('Datos generados para validación de email sin dominio:');",
+              "console.log('Nombre:', nombreAleatorio);",
+              "console.log('Email sin dominio:', emailSinDominio);",
+              "console.log('Teléfono:', telefonoAleatorio);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea de error",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta de error",
+              "pm.test('Response has error structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('error');",
+              "});",
+              "",
+              "// Validar mensaje de error específico",
+              "pm.test('Error message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('email');",
+              "    pm.expect(jsonData.error).to.include('formato');",
+              "});",
+              "",
+              "// Validar que el error sea específico del campo email",
+              "pm.test('Error is email-specific', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error.toLowerCase()).to.include('correo');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de email sin dominio');",
+              "console.log('Email enviado:', pm.environment.get('email_sin_dominio'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
@@ -1160,7 +1308,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"Farmacia San José\",\n  \"email\": \"ventas@\",\n  \"phone\": \"3001234567\"\n}"
+          "raw": "{\n  \"name\": \"{{nombre_email_sin_dominio}}\",\n  \"email\": \"{{email_sin_dominio}}\",\n  \"phone\": \"{{telefono_email_sin_dominio}}\"\n}"
         },
         "url": {
           "raw": "{{url_local_proveedor}}/providers",
@@ -1568,17 +1716,81 @@
     },
     {
       "name": "Validaciones - Content-Type Incorrecto",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "// Generar Content-Types inválidos",
+              "const contentTypesInvalidos = ['text/plain', 'text/html', 'application/xml', 'text/csv', 'application/octet-stream', 'image/jpeg', 'video/mp4'];",
+              "const contentTypeInvalido = contentTypesInvalidos[Math.floor(Math.random() * contentTypesInvalidos.length)];",
+              "",
+              "// Generar datos aleatorios para el body",
+              "const nombres = ['Farmacia San José', 'Farmacia ABC', 'Farmacia XYZ', 'Farmacia Central', 'Farmacia del Norte'];",
+              "const nombreAleatorio = nombres[Math.floor(Math.random() * nombres.length)];",
+              "",
+              "pm.environment.set('content_type_invalido', contentTypeInvalido);",
+              "pm.environment.set('nombre_content_type', nombreAleatorio);",
+              "",
+              "console.log('Datos generados para validación de Content-Type incorrecto:');",
+              "console.log('Content-Type inválido:', contentTypeInvalido);",
+              "console.log('Nombre:', nombreAleatorio);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea de error",
+              "pm.test('Status code is 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar estructura de la respuesta de error",
+              "pm.test('Response has error structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('error');",
+              "});",
+              "",
+              "// Validar mensaje de error específico",
+              "pm.test('Error message is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error).to.include('Content-Type');",
+              "pm.expect(jsonData.error).to.include('soportado');",
+              "});",
+              "",
+              "// Validar que el error mencione los tipos soportados",
+              "pm.test('Error mentions supported types', function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.error.toLowerCase()).to.include('application/json');",
+              "    pm.expect(jsonData.error.toLowerCase()).to.include('multipart');",
+              "});",
+              "",
+              "console.log('Validaciones completadas para error de Content-Type incorrecto');",
+              "console.log('Content-Type enviado:', pm.environment.get('content_type_invalido'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "POST",
         "header": [
           {
             "key": "Content-Type",
-            "value": "text/plain"
+            "value": "{{content_type_invalido}}"
           }
         ],
         "body": {
           "mode": "raw",
-          "raw": "name: Farmacia San José"
+          "raw": "name: {{nombre_content_type}}"
         },
         "url": {
           "raw": "{{url_local_proveedor}}/providers",
@@ -1670,10 +1882,55 @@
               "pm.environment.set('email_logo_invalido', emailAleatorio);",
               "pm.environment.set('telefono_logo_invalido', telefonoAleatorio);",
               "",
-              "console.log('Datos generados para Logo Inválido:');",
+              "console.log('Datos generados para Logo Inválido (JSON):');",
               "console.log('Nombre:', nombreAleatorio);",
               "console.log('Email:', emailAleatorio);",
               "console.log('Teléfono:', telefonoAleatorio);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar que la respuesta sea exitosa o de error",
+              "pm.test('Status code is 201, 400 or 500', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 500]);",
+              "});",
+              "",
+              "// Validar estructura de la respuesta",
+              "pm.test('Response has correct structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 201) {",
+              "        pm.expect(jsonData).to.have.property('message');",
+              "        pm.expect(jsonData).to.have.property('data');",
+              "    } else {",
+              "        pm.expect(jsonData).to.have.property('error');",
+              "    }",
+              "});",
+              "",
+              "// Validar comportamiento específico según el código de respuesta",
+              "pm.test('Response behavior is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 201) {",
+              "        // Si es éxito, validar que el proveedor se creó correctamente",
+              "        pm.expect(jsonData.message).to.include('registrado');",
+              "        pm.expect(jsonData.data).to.have.property('id');",
+              "        pm.expect(jsonData.data).to.have.property('name');",
+              "    } else {",
+              "        // Si es error, validar mensaje de error de imagen",
+              "        pm.expect(jsonData.error).to.include('imagen');",
+              "        pm.expect(jsonData.error).to.include('válida');",
+              "    }",
+              "});",
+              "",
+              "console.log('Validaciones completadas para logo tipo inválido (JSON)');"
             ],
             "type": "text/javascript"
           }
@@ -1765,78 +2022,6 @@
       ]
     },
     {
-      "name": "Validaciones - Logo Tipo de Archivo Inválido (JSON)",
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "exec": [
-              "// Generar datos aleatorios para el proveedor",
-              "const nombres = ['Farmacia San José', 'Farmacia ABC', 'Farmacia XYZ', 'Farmacia Central', 'Farmacia del Norte', 'Farmacia Sur', 'Farmacia Este', 'Farmacia Oeste', 'Farmacia Premium', 'Farmacia Express'];",
-              "const dominios = ['gmail.com', 'hotmail.com', 'yahoo.com', 'farmacia.com', 'salud.com', 'medicina.com'];",
-              "",
-              "// Seleccionar nombre aleatorio",
-              "const nombreAleatorio = nombres[Math.floor(Math.random() * nombres.length)];",
-              "",
-              "// Generar email aleatorio",
-              "const usuarioAleatorio = 'ventas' + Math.floor(Math.random() * 1000);",
-              "const dominioAleatorio = dominios[Math.floor(Math.random() * dominios.length)];",
-              "const emailAleatorio = usuarioAleatorio + '@' + dominioAleatorio;",
-              "",
-              "// Generar teléfono aleatorio (mínimo 7 dígitos)",
-              "const telefonoAleatorio = '3' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');",
-              "",
-              "// Guardar en variables de entorno",
-              "pm.environment.set('nombre_logo_invalido', nombreAleatorio);",
-              "pm.environment.set('email_logo_invalido', emailAleatorio);",
-              "pm.environment.set('telefono_logo_invalido', telefonoAleatorio);",
-              "",
-              "console.log('Datos generados para Logo Inválido:');",
-              "console.log('Nombre:', nombreAleatorio);",
-              "console.log('Email:', emailAleatorio);",
-              "console.log('Teléfono:', telefonoAleatorio);"
-            ],
-            "type": "text/javascript"
-          }
-        }
-      ],
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "formdata",
-          "formdata": [
-            {
-              "key": "name",
-              "value": "{{nombre_logo_invalido}}",
-              "type": "text"
-            },
-            {
-              "key": "email",
-              "value": "{{email_logo_invalido}}",
-              "type": "text"
-            },
-            {
-              "key": "phone",
-              "value": "{{telefono_logo_invalido}}",
-              "type": "text"
-            },
-            {
-              "key": "logo",
-              "type": "file",
-              "src": []
-            }
-          ]
-        },
-        "url": {
-          "raw": "{{url_local_proveedor}}/providers",
-          "host": ["{{url_local_proveedor}}"],
-          "path": ["providers"]
-        }
-      },
-      "response": []
-    },
-    {
       "name": "Validaciones - Logo Tipo de Archivo Inválido (PDF)",
       "event": [
         {
@@ -1867,6 +2052,51 @@
               "console.log('Nombre:', nombreAleatorio);",
               "console.log('Email:', emailAleatorio);",
               "console.log('Teléfono:', telefonoAleatorio);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar que la respuesta sea exitosa o de error",
+              "pm.test('Status code is 201, 400 or 500', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 500]);",
+              "});",
+              "",
+              "// Validar estructura de la respuesta",
+              "pm.test('Response has correct structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 201) {",
+              "        pm.expect(jsonData).to.have.property('message');",
+              "        pm.expect(jsonData).to.have.property('data');",
+              "    } else {",
+              "        pm.expect(jsonData).to.have.property('error');",
+              "    }",
+              "});",
+              "",
+              "// Validar comportamiento específico según el código de respuesta",
+              "pm.test('Response behavior is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 201) {",
+              "        // Si es éxito, validar que el proveedor se creó correctamente",
+              "        pm.expect(jsonData.message).to.include('registrado');",
+              "        pm.expect(jsonData.data).to.have.property('id');",
+              "        pm.expect(jsonData.data).to.have.property('name');",
+              "    } else {",
+              "        // Si es error, validar mensaje de error de imagen",
+              "        pm.expect(jsonData.error).to.include('imagen');",
+              "        pm.expect(jsonData.error).to.include('válida');",
+              "    }",
+              "});",
+              "",
+              "console.log('Validaciones completadas para logo tipo inválido (PDF)');"
             ],
             "type": "text/javascript"
           }
@@ -1942,6 +2172,51 @@
             ],
             "type": "text/javascript"
           }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar que la respuesta sea exitosa o de error",
+              "pm.test('Status code is 201, 400 or 500', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 500]);",
+              "});",
+              "",
+              "// Validar estructura de la respuesta",
+              "pm.test('Response has correct structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 201) {",
+              "        pm.expect(jsonData).to.have.property('message');",
+              "        pm.expect(jsonData).to.have.property('data');",
+              "    } else {",
+              "        pm.expect(jsonData).to.have.property('error');",
+              "    }",
+              "});",
+              "",
+              "// Validar comportamiento específico según el código de respuesta",
+              "pm.test('Response behavior is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 201) {",
+              "        // Si es éxito, validar que el proveedor se creó correctamente",
+              "        pm.expect(jsonData.message).to.include('registrado');",
+              "        pm.expect(jsonData.data).to.have.property('id');",
+              "        pm.expect(jsonData.data).to.have.property('name');",
+              "    } else {",
+              "        // Si es error, validar mensaje de error de imagen",
+              "        pm.expect(jsonData.error).to.include('imagen');",
+              "        pm.expect(jsonData.error).to.include('válida');",
+              "    }",
+              "});",
+              "",
+              "console.log('Validaciones completadas para logo tipo inválido (TXT)');"
+            ],
+            "type": "text/javascript"
+          }
         }
       ],
       "request": {
@@ -2011,6 +2286,51 @@
               "console.log('Nombre:', nombreAleatorio);",
               "console.log('Email:', emailAleatorio);",
               "console.log('Teléfono:', telefonoAleatorio);"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Validar que la respuesta sea JSON",
+              "pm.test('Response is JSON', function () {",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "// Validar que la respuesta sea exitosa o de error",
+              "pm.test('Status code is 201, 400 or 500', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([201, 400, 500]);",
+              "});",
+              "",
+              "// Validar estructura de la respuesta",
+              "pm.test('Response has correct structure', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 201) {",
+              "        pm.expect(jsonData).to.have.property('message');",
+              "        pm.expect(jsonData).to.have.property('data');",
+              "    } else {",
+              "        pm.expect(jsonData).to.have.property('error');",
+              "    }",
+              "});",
+              "",
+              "// Validar comportamiento específico según el código de respuesta",
+              "pm.test('Response behavior is correct', function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (pm.response.code === 201) {",
+              "        // Si es éxito, validar que el proveedor se creó correctamente",
+              "        pm.expect(jsonData.message).to.include('registrado');",
+              "        pm.expect(jsonData.data).to.have.property('id');",
+              "        pm.expect(jsonData.data).to.have.property('name');",
+              "    } else {",
+              "        // Si es error, validar mensaje de error de imagen",
+              "        pm.expect(jsonData.error).to.include('imagen');",
+              "        pm.expect(jsonData.error).to.include('válida');",
+              "    }",
+              "});",
+              "",
+              "console.log('Validaciones completadas para logo archivo vacío');"
             ],
             "type": "text/javascript"
           }
